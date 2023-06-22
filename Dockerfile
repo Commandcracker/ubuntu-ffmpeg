@@ -1,21 +1,13 @@
-# ffmpeg - https://ffmpeg.org/download.html
-#
-# https://hub.docker.com/r/jrottenberg/ffmpeg/
-#
-#
-
-FROM alpine:3.18.2 AS base
+FROM ubuntu:22.04 AS base
 
 RUN set -eux; \
-        apk add --no-cache --update \
-        libgcc \
-        libstdc++ \
+        apt-get -yqq update; \
+        apt-get install -yq --no-install-recommends \
         ca-certificates \
-        libcrypto1.1 \
-        libssl1.1 \
-        libgomp \
         expat \
-        git
+        libgomp1; \
+        apt-get autoremove -y; \
+        apt-get clean -y
 
 FROM base AS build
 
@@ -62,6 +54,7 @@ ENV \
         SRC=/usr/local
 
 ARG \
+        DEBIAN_FRONTEND=noninteractive \
         LD_LIBRARY_PATH="/opt/ffmpeg/lib" \
         MAKEFLAGS="-j2" \
         PKG_CONFIG_PATH="/opt/ffmpeg/share/pkgconfig:/opt/ffmpeg/lib/pkgconfig:/opt/ffmpeg/lib64/pkgconfig" \
@@ -105,31 +98,27 @@ ARG \
         PNG_SHA512SUM="19851afffbe2ffde62d918f7e9017dec778a7ce9c60c75cdc65072f086e6cdc9d9895eb7b207535a84cb5f4ead77ebc2aa9d80025f153662903023e1f7ab9bae *.tar.gz"
 
 RUN set -eux; \
-        apk add --no-cache --update \
+        apt-get -yqq update; \
+        apt-get install -yq --no-install-recommends \
         autoconf \
         automake \
-        bash \
-        binutils \
-        bzip2 \
         cmake \
-        coreutils \
         curl \
-        diffutils \
-        expat-dev \
-        file \
+        bzip2 \
+        libexpat1-dev \
         g++ \
         gcc \
+        git \
         gperf \
         libtool \
         make \
+        meson \
         nasm \
-        openssl-dev \
-        python3 \
-        tar \
-        xcb-proto \
+        perl \
+        pkg-config \
+        libssl-dev \
         yasm \
-        zlib-dev \
-        linux-headers \
+        zlib1g-dev \
         patch
 
 ## libvmaf https://github.com/Netflix/vmaf
@@ -531,8 +520,6 @@ RUN set -eux; \
         make install; \
         rm --recursive --force ${DIR}
 
-ADD test-driver.patch /tmp/libzmq/test-driver.patch
-
 ## libzmq https://github.com/zeromq/libzmq/
 RUN set -eux; \
         DIR=/tmp/libzmq; \
@@ -543,7 +530,6 @@ RUN set -eux; \
         tar --ungzip --extract --strip-components=1 --file=libzmq.tar.gz; \
         ./autogen.sh; \
         ./configure --prefix="${PREFIX}" --disable-Werror; \
-        patch --binary config/test-driver < test-driver.patch; \
         make; \
         make check; \
         make install; \
@@ -696,6 +682,3 @@ CMD ["--help"]
 ENTRYPOINT ["ffmpeg"]
 
 COPY --from=build /usr/local /usr/local
-
-# Let's make sure the app built correctly
-# Convenient to verify on https://hub.docker.com/r/jrottenberg/ffmpeg/builds/ console output
