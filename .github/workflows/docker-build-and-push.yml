@@ -38,5 +38,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/commandcracker/ffmpeg:ubuntu
+          tags: ghcr.io/commandcracker/ubuntu-ffmpeg:latest
           labels: ${{ steps.meta.outputs.labels }}
